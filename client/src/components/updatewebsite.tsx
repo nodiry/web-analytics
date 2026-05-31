@@ -1,57 +1,41 @@
-import { useState } from "react";
-import { SquarePen } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { toast } from "sonner";
-import { siteConfig } from "@/siteConfig";
-import { Website } from "./types";
-import { words } from "@/textConfig";
+import { useState } from 'react';
+import { SquarePen, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useTranslation } from '@/i18n';
+import { websiteApi } from '@/api/websites';
+import type { Website } from './types';
 
-interface UpdateProps {
-  website: Website;
-}
+interface Props { website: Website }
 
-const Update: React.FC<UpdateProps> = ({ website }) => {
+export default function UpdateWebsiteDetails({ website }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState(website.url);
-  const [desc, setDesc] = useState(website.desc || "");
+  const [desc, setDesc] = useState(website.desc ?? '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) {
-      toast.error("Website URL is required.");
-      return;
-    }
-
+    if (!url.trim()) { toast.error('URL is required'); return; }
     setLoading(true);
     try {
-      const res = await fetch(siteConfig.links.website, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ unique_key: website.unique_key, url, desc }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Something went wrong");
-
-      // Update localStorage: Remove old entry and insert updated one
-      const storedWebsites = JSON.parse(localStorage.getItem("web") || "[]");
-      const updatedWebsites = storedWebsites.filter((w: Website) => w.unique_key !== website.unique_key);
-      updatedWebsites.push(result.website); // Add updated website
-      localStorage.setItem("web", JSON.stringify(updatedWebsites));
-
-      toast.success("Website updated successfully!");
+      const { website: updated } = await websiteApi.update(website.unique_key, url.trim(), desc.trim());
+      const stored: Website[] = JSON.parse(localStorage.getItem('web') || '[]');
+      const filtered = stored.filter((w) => w.unique_key !== website.unique_key);
+      filtered.push(updated);
+      localStorage.setItem('web', JSON.stringify(filtered));
+      toast.success('Website updated');
       setOpen(false);
-      window.location.reload(); // Reload the page to reflect changes
-    } catch (error: any) {
-      toast.error(error.message);
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -60,37 +44,38 @@ const Update: React.FC<UpdateProps> = ({ website }) => {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger >
+        <TooltipTrigger asChild>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <SquarePen />
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <SquarePen className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{words.editwebsite}</DialogTitle>
+                <DialogTitle>{t('editwebsite')}</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="url">{words.websiteurl}</Label>
-                  <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" />
+              <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="upd-url">{t('websiteurl')}</Label>
+                  <Input id="upd-url" value={url} onChange={(e) => setUrl(e.target.value)} />
                 </div>
-                <div>
-                  <Label htmlFor="desc">{words.description} </Label>
-                  <Input id="desc" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Describe your website" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="upd-desc">{t('description')}</Label>
+                  <Input id="upd-desc" value={desc} onChange={(e) => setDesc(e.target.value)} />
                 </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? <div className="w-8 h-8 border-4 border-t-transparent border-gray-500 rounded-full animate-spin"></div> : "Update"}
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('delconfirm')}
+                  </Button>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
         </TooltipTrigger>
-        <TooltipContent>{words.editwebsite}</TooltipContent>
+        <TooltipContent>{t('editwebsite')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
-};
-
-export default Update;
+}

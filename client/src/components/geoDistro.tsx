@@ -2,13 +2,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { MetricData } from "./types";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const GeoDistro: React.FC<Props> = ({ metrics }) => {
+  const { t } = useTranslation();
   // Extract unique country names
   const countryNames = new Set<string>();
   metrics.forEach((metric) => {
@@ -44,8 +45,8 @@ const GeoDistro: React.FC<Props> = ({ metrics }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{words.geodistro}</CardTitle>
-        <CardDescription>{words.geodistromes}</CardDescription>
+        <CardTitle>{t('geodistro')}</CardTitle>
+        <CardDescription>{t('geodistromes')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

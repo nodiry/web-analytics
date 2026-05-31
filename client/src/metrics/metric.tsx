@@ -1,193 +1,192 @@
-import NavBar from "@/components/NavBar";
-import { Toaster } from "@/components/ui/sonner";
-import { siteConfig } from "@/siteConfig";
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import VisitsChart from "@/components/visitChart";
-import DeviceStatsChart from "@/components/devStatsChart";
-import ReferrersChart from "@/components/referrers";
-import AvgLoadTimeChart from "@/components/avgLoadTime";
-import PagesChart from "@/components/pageChart";
-import BounceRateChart from "@/components/bounceRate";
-import SessionDurationChart from "@/components/sessionChart";
-import { MetricData, Website } from "@/components/types";
-import Loading from "@/components/Loading";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import Info from "@/components/info";
-import Update from "@/components/updatewebsite";
-import RefreshMetrics from "@/components/refresh";
-import CodeGuide from "@/components/code";
-import DeleteWebsite from "@/components/delete";
-import { words } from "@/textConfig";
-import { StatCard } from "@/components/webcard";
-import GeoDistro from "@/components/geoDistro";
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import NavBar from '@/components/NavBar';
+import { Toaster } from '@/components/ui/sonner';
+import VisitsChart from '@/components/visitChart';
+import DeviceStatsChart from '@/components/devStatsChart';
+import ReferrersChart from '@/components/referrers';
+import AvgLoadTimeChart from '@/components/avgLoadTime';
+import PagesChart from '@/components/pageChart';
+import BounceRateChart from '@/components/bounceRate';
+import SessionDurationChart from '@/components/sessionChart';
+import GeoDistro from '@/components/geoDistro';
+import Info from '@/components/info';
+import UpdateWebsiteDetails from '@/components/updatewebsite';
+import RefreshMetrics from '@/components/refresh';
+import CodeGuide from '@/components/code';
+import DeleteWebsite from '@/components/delete';
+import { StatCard } from '@/components/webcard';
+import Loading from '@/components/Loading';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useTranslation } from '@/i18n';
+import { metricsApi } from '@/api/metrics';
+import type { MetricData, Website } from '@/components/types';
+import { ArrowUpRight } from 'lucide-react';
 
-const Metric = () => {
-  const { id, period } = useParams(); // Get unique_key and period from URL
-  const [metrics, setMetrics] = useState<MetricData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [website, setWeb] = useState<Website | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const PERIOD_MAP: Record<string, string> = {
+  '1': 'day',
+  '2': 'week',
+  '3': 'month',
+  '4': 'all',
+};
+
+function fSD(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function extractPeriods(allData: MetricData[], uniqueKey: string) {
+  const now = Date.now();
+  const day  = allData.filter((m) => new Date(m.timestamp).getTime() >= now - 864e5);
+  const week = allData.filter((m) => new Date(m.timestamp).getTime() >= now - 6048e5);
+  localStorage.setItem(`metrics_${uniqueKey}_day`,   JSON.stringify(day));
+  localStorage.setItem(`metrics_${uniqueKey}_week`,  JSON.stringify(week));
+  localStorage.setItem(`metrics_${uniqueKey}_month`, JSON.stringify(allData));
+}
+
+export default function Metric() {
+  const { id, period } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  const periodMap: { [key: string]: string } = {
-    "1": "day", // Last 24 hours
-    "2": "week", // Last 7 days
-    "3": "month", // Last 30 days
-    "4": "all", // All data from the start
-  };
-
-  // Function to extract "Day" and "Week" data from 1-month data
-  const extractMetrics = (allData: MetricData[]) => {
-    const now = new Date().getTime();
-    const last24Hours = now - 24 * 60 * 60 * 1000;
-    const last7Days = now - 7 * 24 * 60 * 60 * 1000;
-
-    const dayData = allData.filter((m) => new Date(m.timestamp).getTime() >= last24Hours);
-    const weekData = allData.filter((m) => new Date(m.timestamp).getTime() >= last7Days);
-
-    localStorage.setItem(`metrics_${id}_day`, JSON.stringify(dayData));
-    localStorage.setItem(`metrics_${id}_week`, JSON.stringify(weekData));
-    localStorage.setItem(`metrics_${id}_month`, JSON.stringify(allData));
-  };
+  const [metrics, setMetrics]   = useState<MetricData[]>([]);
+  const [website, setWebsite]   = useState<Website | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
 
   const loadMetrics = async (periodKey: string) => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const websites: Website[] = JSON.parse(localStorage.getItem("web") || "[]");
+    const user     = JSON.parse(localStorage.getItem('user') || '{}');
+    const websites: Website[] = JSON.parse(localStorage.getItem('web') || '[]');
 
-    if (!user._id || !id) {
-      navigate("/");
-      return;
-    }
+    if (!user._id || !id) { navigate('/'); return; }
 
-    const matchedWebsite = websites.find((web) => web.unique_key === id);
-    if(matchedWebsite) setWeb(matchedWebsite);
+    const matched = websites.find((w) => w.unique_key === id);
+    if (matched) setWebsite(matched);
 
-    // Check if metrics exist in localStorage
-    const cachedMetrics = localStorage.getItem(`metrics_${id}_${periodKey}`);
-    if (cachedMetrics) {
-      setMetrics(JSON.parse(cachedMetrics));
+    const cached = localStorage.getItem(`metrics_${id}_${periodKey}`);
+    if (cached) {
+      setMetrics(JSON.parse(cached));
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const res = await fetch(`${siteConfig.links.metrics}${user._id}/${id}/${periodKey === "all" ? 4 : 3}`, {
-        credentials: "include",
-      });
-      const data = await res.json();
+      const periodNum = periodKey === 'all' ? 4 : 3;
+      const { metrics: data } = await metricsApi.fetch(user._id, id, periodNum);
 
-      if (res.ok) {
-        if (periodKey === "all") localStorage.setItem(`metrics_${id}_all`, JSON.stringify(data.metrics));
-        else extractMetrics(data.metrics);
-        
-        setMetrics(data.metrics);
-      } else {
-        setError(data.message || "Failed to fetch metrics");
-      }
-    } catch (err) {
-      setError("Error fetching data");
+      if (periodKey === 'all') localStorage.setItem(`metrics_${id}_all`, JSON.stringify(data));
+      else extractPeriods(data, id);
+
+      setMetrics(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load metrics');
     } finally {
       setLoading(false);
     }
   };
-  const handlePeriodChange = (selectedPeriod: string) => {
-    // Update URL with the new period
-    navigate(`/metrics/${id}/${selectedPeriod}`);
-  };
+
   useEffect(() => {
-    const selectedPeriod = period ? periodMap[period] : "day";
-    loadMetrics(selectedPeriod);
+    const key = period ? PERIOD_MAP[period] ?? 'day' : 'day';
+    loadMetrics(key);
   }, [id, period]);
 
-  if (loading) return <div><NavBar /> <Loading /></div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  const handlePeriodChange = (val: string) => {
+    if (val) navigate(`/metrics/${id}/${val}`);
+  };
 
-  // For formatting avg session duration from seconds to minutes and seconds
-const fSD = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes} mins & ${remainingSeconds.toFixed(0)} sec`;
-};
+  if (loading) return <><NavBar /><Loading /></>;
+  if (error)   return <div className="min-h-screen flex items-center justify-center text-destructive">{error}</div>;
+
+  const periodLabel = [
+    { v: '1', label: t('day') },
+    { v: '2', label: t('week') },
+    { v: '3', label: t('month') },
+    { v: '4', label: t('all') },
+  ];
+
   return (
-    <div className="flex flex-col p-6 space-y-6 w-full max-w-screen overflow-x-hidden">
-  <NavBar />
-  <h1 className="text-2xl font-bold mt-12 mb-4 text-center">
-  <a 
-    href={website?.url?.startsWith('http') ? website.url : `https://${website?.url}`} 
-    target="_blank" 
-    rel="noopener noreferrer" 
-    className="text-blue-500 hover:underline"
-  >
-    {website?.url}
-  </a> Metrics{' '}
-  <Info
-    date={website?.created_at || "unknown"}
-    url={website?.url || "unknown"}
-    desc={website?.desc || "unknown"}
-  />
-</h1>
+    <div className="min-h-screen bg-background">
+      <NavBar />
 
-  {/* Controls - Wraps on Mobile */}
-  <div className="flex flex-col md:flex-row items-center justify-center gap-4 w-full">
-    {/* Toggle Group (Moves Above Buttons on Mobile) */}
-    <div className="w-full md:w-auto flex justify-center">
-      <ToggleGroup
-        type="single"
-        value={period}
-        onValueChange={handlePeriodChange}
-        className="flex flex-wrap justify-center"
-      >
-        <ToggleGroupItem variant="outline" value="1">
-          {words.day}
-        </ToggleGroupItem>
-        <ToggleGroupItem variant="outline" value="2">
-          {words.week}
-        </ToggleGroupItem>
-        <ToggleGroupItem variant="outline" value="3">
-          {words.month}
-        </ToggleGroupItem>
-        <ToggleGroupItem variant="outline" value="4">
-          {words.all}
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
-
-    {/* Action Buttons */}
-    <div className="flex flex-wrap justify-center md:justify-end gap-4">
-      <CodeGuide unique_key={website?.unique_key || "null"} />
-      <RefreshMetrics unique_key={website?.unique_key || "null"} />
-      {website && <Update website={website} />}
-      {website && <DeleteWebsite unique_key={website?.unique_key} />}
-    </div>
-  </div>
-
-  {/* Top Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <StatCard title={words.totalvisits} value={website?.stats.total_visits|| 0} />
-            <StatCard title={words.uniquevisits} value={website?.stats.unique_visitors || 0} />
-            <StatCard title={words.bouncerate} value={`${website?.stats.bounce_rate.toFixed(2)}%`} />
-            <StatCard title={words.avgses} value={fSD(website?.stats.avg_session_duration || 0)} />
+      <main className="max-w-7xl mx-auto px-4 pt-20 pb-16 space-y-6">
+        {/* Page header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <a
+              href={website?.url?.startsWith('http') ? website.url : `https://${website?.url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xl font-bold hover:text-primary transition-colors flex items-center gap-1.5 truncate"
+            >
+              {website?.url?.replace(/^https?:\/\//, '')}
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </a>
+            {website && (
+              <Info
+                date={website.created_at}
+                url={website.url}
+                desc={website.desc ?? ''}
+              />
+            )}
           </div>
 
-  {/* Metrics Section */}
-  {metrics.length > 0 ? (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full">
-      <VisitsChart metrics={metrics} />
-      <DeviceStatsChart metrics={metrics} />
-      <ReferrersChart metrics={metrics} />
-      <AvgLoadTimeChart metrics={metrics} />
-      <PagesChart metrics={metrics} />
-      <BounceRateChart metrics={metrics} />
-      <SessionDurationChart metrics={metrics} />
-      <GeoDistro metrics={metrics}/>
+          {/* Action toolbar */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {website?.unique_key && <CodeGuide unique_key={website.unique_key} />}
+            {website?.unique_key && <RefreshMetrics unique_key={website.unique_key} />}
+            {website && <UpdateWebsiteDetails website={website} />}
+            {website?.unique_key && <DeleteWebsite unique_key={website.unique_key} />}
+          </div>
+        </div>
+
+        {/* Period selector */}
+        <div>
+          <ToggleGroup
+            type="single"
+            value={period ?? '1'}
+            onValueChange={handlePeriodChange}
+            className="h-9"
+          >
+            {periodLabel.map(({ v, label }) => (
+              <ToggleGroupItem key={v} value={v} variant="outline" className="text-xs px-3">
+                {label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        {/* Stat cards */}
+        {website && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard title={t('totalvisits')}  value={website.stats.total_visits.toLocaleString()} />
+            <StatCard title={t('uniquevisits')} value={website.stats.unique_visitors.toLocaleString()} />
+            <StatCard title={t('bouncerate')}   value={`${website.stats.bounce_rate.toFixed(1)}%`} />
+            <StatCard title={t('avgses')}        value={fSD(website.stats.avg_session_duration)} />
+          </div>
+        )}
+
+        {/* Charts */}
+        {metrics.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <VisitsChart metrics={metrics} />
+            <DeviceStatsChart metrics={metrics} />
+            <BounceRateChart metrics={metrics} />
+            <SessionDurationChart metrics={metrics} />
+            <AvgLoadTimeChart metrics={metrics} />
+            <GeoDistro metrics={metrics} />
+            <PagesChart metrics={metrics} />
+            <ReferrersChart metrics={metrics} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-20 rounded-xl border-2 border-dashed border-border">
+            <p className="text-sm text-muted-foreground">{t('nometricmes')}</p>
+          </div>
+        )}
+      </main>
+
+      <Toaster />
     </div>
-  ) : ( <div className="text-center text-neutral-500">{words.nometricmes} </div> )}
-  <Toaster />
-</div>
-
   );
-};
-
-export default Metric;
+}

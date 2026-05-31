@@ -1,42 +1,43 @@
-import { useState, ChangeEvent, FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { siteConfig } from "../siteConfig";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, BarChart3, Loader2 } from "lucide-react";
-import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GoogleSignUpButton } from "./google";
-import { Separator } from "@/components/ui/separator";
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Eye, EyeOff, BarChart3, Loader2 } from 'lucide-react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleSignUpButton } from './google';
+import { GOOGLE_CLIENT_ID } from '@/config';
+import { authApi } from '@/api/auth';
 
 export default function SignUp() {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ username: "", email: "", password: "", firstname: "", lastname: "" });
-  const [error, setError] = useState("");
+  const [form, setForm] = useState({ username: '', email: '', password: '', firstname: '', lastname: '' });
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setError("");
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    setError('');
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.username || !form.email || !form.password) { setError("Please fill all required fields"); return; }
+    if (!form.username || !form.email || !form.password) {
+      setError('Please fill all required fields');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch(siteConfig.links.signup, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
-      navigate("/auth/signin");
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
+      await authApi.signUp(form);
+      navigate('/auth/signin');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,15 +49,15 @@ export default function SignUp() {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-            <BarChart3 className="w-6 h-6 text-primary" />
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+            <BarChart3 className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Create account</h1>
           <p className="text-sm text-muted-foreground mt-1">Start tracking your website today</p>
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-5">
-          <GoogleOAuthProvider clientId={siteConfig.links.client}>
+          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
             <GoogleSignUpButton />
           </GoogleOAuthProvider>
 
@@ -97,19 +98,32 @@ export default function SignUp() {
             <div className="space-y-1">
               <Label htmlFor="password" className="text-xs">Password <span className="text-destructive">*</span></Label>
               <div className="relative">
-                <Input id="password" type={visible ? "text" : "password"} name="password" placeholder="••••••••" value={form.password} onChange={handleChange} className="h-9 text-sm pr-9" required />
-                <button type="button" onClick={() => setVisible(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  {visible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <Input
+                  id="password"
+                  type={visible ? 'text' : 'password'}
+                  name="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="h-9 text-sm pr-9"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setVisible((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </button>
               </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create account"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create account'}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
-              Already have an account?{" "}
+              Already have an account?{' '}
               <Link to="/auth/signin" className="text-primary hover:underline">Sign in</Link>
             </p>
           </form>

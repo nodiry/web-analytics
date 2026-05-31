@@ -2,13 +2,14 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { MetricData } from "./types";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const PagesChart = ({ metrics }: Props) => {
+  const { t } = useTranslation();
   // Extract unique page URLs
   const pageUrls = new Set<string>();
   metrics.forEach((metric) => {
@@ -44,8 +45,8 @@ const PagesChart = ({ metrics }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{words.pages}</CardTitle>
-        <CardDescription>{words.pagesmes}</CardDescription>
+        <CardTitle>{t('pages')}</CardTitle>
+        <CardDescription>{t('pagesmes')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

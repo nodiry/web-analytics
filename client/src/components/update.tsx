@@ -1,35 +1,29 @@
-import { siteConfig } from "@/siteConfig";
-import { useState } from "react";
-import { Button } from "./ui/button";
-import { RefreshCcw } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { words } from "@/textConfig";
-interface Props {
-    unique_key:string
-}
-const UpdateWebsite = ({unique_key}:Props) => {
+import { useState } from 'react';
+import { RefreshCcw, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useTranslation } from '@/i18n';
+import { websiteApi } from '@/api/websites';
+import type { Website } from './types';
+
+interface Props { unique_key: string }
+
+export default function UpdateWebsite({ unique_key }: Props) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const key = unique_key;
-  // Function to update website
-  const updateWebsite = async (unique_key: string) => {
+
+  const handleRenew = async () => {
     setLoading(true);
     try {
-      // Sending PUT request to update website by unique_key
-      const response = await fetch(siteConfig.links.website+"renew",
-         { method:"PUT", credentials:"include", body: unique_key });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Something went wrong");
-      // Get all websites from localStorage
-      const websites = JSON.parse(localStorage.getItem("web") || "[]");
-      const websiteIndex = websites.findIndex((site: any) => site.unique_key === unique_key);
-
-      if (websiteIndex !== -1) {
-        websites[websiteIndex] = data.website;
-        localStorage.setItem("web", JSON.stringify(websites));
-        window.location.reload();
-      } 
-    } catch (err) {
-      console.error("Error updating website:", err);
+      const { website } = await websiteApi.renew(unique_key);
+      const stored: Website[] = JSON.parse(localStorage.getItem('web') || '[]');
+      const idx = stored.findIndex((s) => s.unique_key === unique_key);
+      if (idx !== -1) stored[idx] = website;
+      localStorage.setItem('web', JSON.stringify(stored));
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message || 'Update failed');
     } finally {
       setLoading(false);
     }
@@ -39,18 +33,14 @@ const UpdateWebsite = ({unique_key}:Props) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-        <Button variant='outline' onClick={() => updateWebsite(key)}
-        disabled={loading || !key} >
-        {loading ? <div className="w-8 h-8 border-4 border-t-transparent border-gray-500 rounded-full animate-spin"></div>
-                  : <RefreshCcw />}
-      </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{words.updatewebsite}</p>
-      </TooltipContent>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRenew} disabled={loading}>
+            {loading
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <RefreshCcw className="h-4 w-4" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('updatewebsite')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
-
   );
-};
-export default UpdateWebsite;
+}

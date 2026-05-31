@@ -1,73 +1,115 @@
 import { Link, useNavigate } from 'react-router-dom';
-import ProfileModal from './ProfileModal';
-import LangOption from './LangOption';
-import { words } from '../textConfig';
 import { useState } from 'react';
-import { ModeToggle } from './mode-toggle';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { BarChart3, LayoutDashboard, User, LogOut, Menu } from 'lucide-react';
 import { Button } from './ui/button';
-import {LayoutDashboard, LogOutIcon, Menu } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { ModeToggle } from './mode-toggle';
+import LangOption from './LangOption';
+import { useTranslation } from '@/i18n';
+import { authApi } from '@/api/auth';
 
-const NavBar = () => {
+export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  const navLinks = [
-    { path: '/dashboard', label: words.dashboard },
-    { path: '/profile', label: words.profile },
-  ];
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  })();
 
-  const clearCookies = () => {
-    document.cookie.split(";").forEach((cookie) => {
-      const [name] = cookie.split("=");
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    });
-  };
-  const handleLogout = () => {
+  const initials = user
+    ? `${user.firstname?.[0] ?? ''}${user.lastname?.[0] ?? ''}`.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'
+    : 'U';
+
+  const handleLogout = async () => {
+    try { await authApi.logout(); } catch {}
     localStorage.clear();
-    clearCookies();
-    navigate("/");
+    navigate('/');
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-14 px-12 flex items-center justify-between backdrop-blur-md z-50 border-b-1">
-      <div className="flex items-center space-x-4">
-      <Button variant="outline" onClick={()=>{navigate('/dashboard')}}>
-      <LayoutDashboard />
-      </Button>
-      </div>
-      <div className="hidden md:flex items-center space-x-4">
-        <ProfileModal />
-      </div>
+    <header className="fixed top-0 inset-x-0 h-14 z-50 border-b border-border/60 backdrop-blur-md bg-background/80">
+      <div className="max-w-screen-xl mx-auto h-full px-4 flex items-center justify-between">
+        {/* Left — logo + nav */}
+        <div className="flex items-center gap-6">
+          <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <span className="font-bold text-sm tracking-tight hidden sm:inline">Glasscube</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-1">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/dashboard">
+                <LayoutDashboard className="h-4 w-4 mr-1.5" />
+                {t('dashboard')}
+              </Link>
+            </Button>
+          </nav>
+        </div>
 
-      {/* Mobile Menu */}
-      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetTrigger asChild>
-          <Button variant='ghost' className='md:hidden'>
-            <Menu size={24} />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" >
-  <SheetHeader>
-    <SheetTitle>{words.menu}</SheetTitle>
-  </SheetHeader>
-  <SheetDescription className='mx-2'>The main menu for phone navigation.</SheetDescription>
-  <div className="flex flex-col space-y-4 p-4">
-    {navLinks.map(({ path, label }) => (
-      <Link className={`text-lg px-3 py-2 rounded-md transition hover:bg-gray-600`}
-      key={path} to={path} onClick={() => setMenuOpen(false)} >{label}
-      </Link>
-    ))}
-  </div>
-  <div className='mx-8 space-x-8 flex-row'>
-  <LangOption />
-  <ModeToggle />
-  <Button variant='destructive' onClick={handleLogout}><LogOutIcon/></Button>
-  </div>
-      </SheetContent>
-    </Sheet>
-    </nav>
+        {/* Right — desktop controls */}
+        <div className="hidden md:flex items-center gap-2">
+          <LangOption />
+          <ModeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <div className="h-5 w-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center">
+                  {initials}
+                </div>
+                {user?.username && <span className="max-w-[80px] truncate text-xs">{user.username}</span>}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" /> {t('profile')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" /> {t('signout')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Mobile hamburger */}
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" /> Glasscube
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 flex flex-col gap-2">
+              <Button variant="ghost" className="justify-start" asChild onClick={() => setMenuOpen(false)}>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" /> {t('dashboard')}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="justify-start" asChild onClick={() => setMenuOpen(false)}>
+                <Link to="/profile">
+                  <User className="mr-2 h-4 w-4" /> {t('profile')}
+                </Link>
+              </Button>
+            </div>
+            <div className="absolute bottom-6 left-4 right-4 flex items-center gap-2">
+              <LangOption />
+              <ModeToggle />
+              <Button variant="destructive" size="sm" className="ml-auto" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-1" /> {t('signout')}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </header>
   );
-};
-
-export default NavBar;
+}

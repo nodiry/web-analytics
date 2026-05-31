@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import NavBar from "@/components/NavBar";
-import DeleteProfile from "@/components/deleteProfile";
-import EditProfile from "@/components/editProfile";
-import { words } from "@/textConfig";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import NavBar from '@/components/NavBar';
+import DeleteProfile from '@/components/deleteProfile';
+import EditProfile from '@/components/editProfile';
+import { useTranslation } from '@/i18n';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { CalendarDays, Mail, ShieldCheck, ShieldOff, Clock } from 'lucide-react';
 
 interface User {
   username: string;
@@ -14,77 +15,86 @@ interface User {
   email: string;
   img_url?: string;
   authorized: boolean;
-  password: "";
+  password: string;
   created_at: string;
   modified_at: string;
 }
 
-function formatDate(dateString: string | undefined) {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "Invalid Date";
-
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
+function formatDate(d: string | undefined) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   }).format(date);
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      navigate("/");
-      return;
-    }
-    setUser(JSON.parse(storedUser));
+    const stored = localStorage.getItem('user');
+    if (!stored) { navigate('/'); return; }
+    setUser(JSON.parse(stored));
   }, [navigate]);
 
   if (!user) return null;
 
+  const initials = `${user.firstname?.[0] ?? ''}${user.lastname?.[0] ?? ''}`.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U';
+
   return (
-    <div className="flex flex-col justify-center items-center w-full min-h-screen px-4">
+    <div className="min-h-screen bg-background">
       <NavBar />
-      <Card className="w-full max-w-md md:max-w-lg lg:max-w-2xl mt-16 rounded-2xl shadow-md">
-        <CardHeader className="flex flex-col items-center text-center">
-          <Avatar className="w-28 h-28 md:w-32 md:h-32 lg:w-40 lg:h-40">
-            <AvatarImage
-              src={
-                user.img_url ||
-                "https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="
-              }
-              alt={user.username}
-            />
-            <AvatarFallback>
-              {user.firstname[0]}
-              {user.lastname[0]}
-            </AvatarFallback>
-          </Avatar>
-          <CardTitle className="mt-4 text-lg md:text-xl font-semibold">
-            {user.firstname} {user.lastname}
-          </CardTitle>
-          <p className="text-gray-500 text-sm md:text-base">@{user.username}</p>
-        </CardHeader>
-        <CardContent className="space-y-4 text-center text-sm md:text-base">
-          <p className="text-gray-600">📧 {user.email}</p>
-          <p className="text-gray-600">📅 {words.created}: {formatDate(user.created_at)}</p>
-          <p className="text-gray-600">📝 {words.last_modified}: {formatDate(user.modified_at)}</p>
-          <p className={`font-semibold ${user.authorized ? "text-green-600" : "text-red-600"}`}>
-            {user.authorized ? "✅ Authorized" : "❌ Not Authorized"}
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
-            <EditProfile user={user} />
-            <DeleteProfile username={user.username} />
+
+      <main className="max-w-2xl mx-auto px-4 pt-20 pb-16">
+        <div className="mt-6 rounded-2xl border border-border/60 bg-card overflow-hidden">
+          {/* Header band */}
+          <div className="h-20 bg-gradient-to-r from-primary/20 to-primary/5" />
+
+          {/* Avatar + name */}
+          <div className="px-6 pb-6">
+            <div className="-mt-10 flex items-end justify-between mb-4">
+              <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                <AvatarImage src={user.img_url} alt={user.username} />
+                <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <Badge variant={user.authorized ? 'default' : 'destructive'} className="mb-1">
+                {user.authorized
+                  ? <><ShieldCheck className="h-3 w-3 mr-1" /> Authorized</>
+                  : <><ShieldOff  className="h-3 w-3 mr-1" /> Unauthorized</>}
+              </Badge>
+            </div>
+
+            <h1 className="text-xl font-bold">{user.firstname} {user.lastname}</h1>
+            <p className="text-sm text-muted-foreground">@{user.username}</p>
+
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-4 w-4 shrink-0" />
+                <span>{user.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CalendarDays className="h-4 w-4 shrink-0" />
+                <span>{t('created')} {formatDate(user.created_at)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4 shrink-0" />
+                <span>{t('last_modified')} {formatDate(user.modified_at)}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <EditProfile user={user} />
+              <DeleteProfile username={user.username} />
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
     </div>
   );
 }

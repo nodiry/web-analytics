@@ -2,20 +2,21 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { MetricData } from "@/components/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const BounceRateChart = ({ metrics }: Props) => {
+  const { t } = useTranslation();
   const chartConfig = { bounceRate: { label: "Bounce rate %", color: "#8884d8" }}
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{words.avgbouncerate}</CardTitle>
-        <CardDescription>{words.avgbounceratemes}</CardDescription>
+        <CardTitle>{t('avgbouncerate')}</CardTitle>
+        <CardDescription>{t('avgbounceratemes')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

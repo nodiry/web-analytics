@@ -1,41 +1,40 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { InfoIcon } from "lucide-react";
-import { words } from "@/textConfig";
+import { InfoIcon } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useTranslation } from '@/i18n';
 
-interface InfoProps {
-  date: string;
-  url: string;
-  desc: string;
-}
+interface Props { date: string; url: string; desc: string }
 
-const Info: React.FC<InfoProps> = ({ date, url, desc }) => {
+export default function Info({ date, url, desc }: Props) {
+  const { t } = useTranslation();
+
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <InfoIcon />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <InfoIcon className="h-4 w-4" />
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{url}</DialogTitle>
-                <DialogDescription>{desc}</DialogDescription>
+                <DialogTitle className="text-base">{url}</DialogTitle>
+                <DialogDescription>{desc || '—'}</DialogDescription>
               </DialogHeader>
-              <DialogFooter>{date}</DialogFooter>
+              <DialogFooter className="text-xs text-muted-foreground">
+                {t('created')} {date}
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </TooltipTrigger>
-        <TooltipContent>
-          <p>{words.infomes}</p>
-        </TooltipContent>
+        <TooltipContent>{t('infomes')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
-};
-
-export default Info;
+}

@@ -1,110 +1,128 @@
-import React from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { Website } from "./types";
-import { useNavigate } from "react-router-dom";
-import { words } from "@/textConfig";
-import UpdateWebsite from "./update";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Globe, TrendingUp, Users, Activity, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Website } from './types';
+import { useTranslation } from '@/i18n';
+import UpdateWebsite from './update';
 
-interface WebsiteCardProps {  website: Website;}
+interface WebsiteCardProps { website: Website }
+
+function fSD(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
 
 const WebsiteCard: React.FC<WebsiteCardProps> = ({ website }) => {
-  if (!website) return null;
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { url, stats } = website;
+  const { url, stats, desc } = website;
 
-  // Device distribution data for Pie Chart
-  const deviceData = [
-    { name: words.desktop, value: stats.device_distribution.desktop, color: "#4A90E2" },
-    { name: words.mobile, value: stats.device_distribution.mobile, color: "#E94E77" },
-    { name: words.tablet, value: stats.device_distribution.tablet, color: "#F8B500" },
+  const displayUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  const statItems = [
+    {
+      icon: <TrendingUp className="h-3.5 w-3.5" />,
+      label: t('totalvisits'),
+      value: stats.total_visits.toLocaleString(),
+    },
+    {
+      icon: <Users className="h-3.5 w-3.5" />,
+      label: t('uniquevisits'),
+      value: stats.unique_visitors.toLocaleString(),
+    },
+    {
+      icon: <Activity className="h-3.5 w-3.5" />,
+      label: t('bouncerate'),
+      value: `${stats.bounce_rate.toFixed(1)}%`,
+    },
+    {
+      icon: <Clock className="h-3.5 w-3.5" />,
+      label: t('avgses'),
+      value: fSD(stats.avg_session_duration),
+    },
   ];
 
-// For formatting avg session duration from seconds to minutes and seconds
-const fSD = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes} mins & ${remainingSeconds.toFixed(0)} sec`;
-};
-
   return (
-    <Card className="m-6 border rounded-lg">
-      <CardHeader>
-        <CardTitle >{url} <UpdateWebsite unique_key={website?.unique_key || "null"}/></CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Top Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard title={words.totalvisits} value={stats.total_visits} />
-          <StatCard title={words.uniquevisits} value={stats.unique_visitors} />
-          <StatCard title={words.bouncerate} value={`${stats.bounce_rate.toFixed(2)}%`} />
-          <StatCard title={words.avgses} value={fSD(stats.avg_session_duration)} />
-        </div>
-
-        {/* Device Distribution Pie Chart */}
-        <div className="w-full flex justify-center my-4">
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={deviceData}
-                cx="50%" cy="50%"
-                outerRadius={80}
-                dataKey="value"
-                label
+    <div className="group rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200 p-5">
+      <div className="flex items-start justify-between gap-4">
+        {/* Left: identity */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Globe className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <a
+                href={url.startsWith('http') ? url : `https://${url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-sm text-foreground hover:text-primary truncate flex items-center gap-1 transition-colors"
               >
-                {deviceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Top Pages and Referrers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          {/* Top Pages */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">{words.toppages}</h3>
-            <ul className="text-sm">
-              {stats.pages.slice(0, 3).map((page, index) => (
-                <li key={index} className="flex justify-between">
-                  <span >{page.path}</span>
-                  <span className="font-medium">{page.visits} visits</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Top Referrers */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">{words.topreferrers}</h3>
-            <ul className="text-sm">
-              {stats.top_referrers.slice(0, 3).map((ref, index) => (
-                <li key={index} className="flex justify-between">
-                  <span>{ref.referrer}</span>
-                  <span className="font-medium">{ref.count} {words.visits}</span>
-                </li>
-              ))}
-            </ul>
+                {displayUrl}
+                <ArrowUpRight className="h-3 w-3 opacity-50 group-hover:opacity-100 shrink-0" />
+              </a>
+            </div>
+            {desc && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{desc}</p>
+            )}
           </div>
         </div>
-      </CardContent>
 
-      {/* Footer */}
-      <CardFooter className="flex justify-end">
-        <Button variant="default" onClick={()=>{navigate('/metrics/'+website.unique_key+'/3')}}>{words.metrics}</Button>
-      </CardFooter>
-    </Card>
+        {/* Right: actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <UpdateWebsite unique_key={website.unique_key} />
+          <Button
+            size="sm"
+            onClick={() => navigate(`/metrics/${website.unique_key}/1`)}
+            className="h-8 gap-1.5"
+          >
+            {t('metrics')}
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+        {statItems.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-lg bg-muted/40 px-3 py-2.5 flex flex-col gap-1"
+          >
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              {item.icon}
+              <span className="text-[11px] font-medium uppercase tracking-wide leading-none">
+                {item.label}
+              </span>
+            </div>
+            <span className="text-lg font-bold leading-none">{item.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Top pages preview */}
+      {stats.pages.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {stats.pages.slice(0, 4).map((page, i) => (
+            <Badge key={i} variant="secondary" className="text-xs font-normal">
+              {page.path}
+              <span className="ml-1 text-muted-foreground">{page.visits}</span>
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
-// Reusable StatCard Component
 export const StatCard: React.FC<{ title: string; value: string | number }> = ({ title, value }) => (
-  <Card className="p-3 text-center border">
-    <CardTitle className="text-md font-medium">{title}</CardTitle>
-    <p className="text-lg font-bold">{value}</p>
-  </Card>
+  <div className="rounded-xl border border-border/60 bg-card p-4 text-center">
+    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">{title}</p>
+    <p className="text-2xl font-bold">{value}</p>
+  </div>
 );
 
 export default WebsiteCard;

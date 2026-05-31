@@ -1,38 +1,36 @@
-import { useState, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { siteConfig } from "../siteConfig";
-import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
-import { Button } from "@/components/ui/button";
-import { BarChart3, Loader2, Mail } from "lucide-react";
-import { toast } from "sonner";
+import { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot,
+} from '@/components/ui/input-otp';
+import { Button } from '@/components/ui/button';
+import { BarChart3, Loader2, Mail } from 'lucide-react';
+import { toast } from 'sonner';
+import { authApi } from '@/api/auth';
 
 export default function TwoAuth() {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const email = localStorage.getItem("email");
+  const email = localStorage.getItem('email');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email) { setError("Session expired. Please sign in again."); return; }
-    if (code.length !== 6) { toast.error("Enter the 6-digit code"); return; }
+    if (!email) { setError('Session expired. Please sign in again.'); return; }
+    if (code.length !== 6) { toast.error('Enter the 6-digit code'); return; }
     setLoading(true);
     try {
-      const res = await fetch(siteConfig.links.twoauth, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, passcode: code }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Invalid code");
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("web", JSON.stringify(data.web));
-      navigate("/dashboard");
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
+      const data = await authApi.verifyOtp(email, code) as any;
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('web',  JSON.stringify(data.web));
+      navigate('/dashboard');
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,15 +42,15 @@ export default function TwoAuth() {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-            <BarChart3 className="w-6 h-6 text-primary" />
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+            <BarChart3 className="h-6 w-6 text-primary" />
           </div>
           <h1 className="text-2xl font-bold">Check your email</h1>
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-            <Mail className="w-4 h-4 text-primary shrink-0" />
+            <Mail className="h-4 w-4 text-primary shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">Code sent to</p>
               <p className="text-sm font-medium">{email}</p>
@@ -86,7 +84,7 @@ export default function TwoAuth() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
             </Button>
           </form>
         </div>

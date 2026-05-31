@@ -2,26 +2,26 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { MetricData } from "./types";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const AvgLoadTimeChart = ({ metrics }: Props) => {
+  const { t } = useTranslation();
   const chartConfig:ChartConfig = { avgLoadTime: { label: "Average Load Time (ms)" } };
 
-  // Map the metrics to ensure correct timestamp formatting
   const formattedMetrics = metrics.map((metric) => ({
     ...metric,
-    formattedTimestamp: new Date(metric.timestamp).toLocaleTimeString(), // Format timestamp
+    formattedTimestamp: new Date(metric.timestamp).toLocaleTimeString(),
   }));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{words.avgloadtime}</CardTitle>
-        <CardDescription>{words.avgloadtimedesc}</CardDescription>
+        <CardTitle>{t('avgloadtime')}</CardTitle>
+        <CardDescription>{t('avgloadtimedesc')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

@@ -2,32 +2,32 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { MetricData } from "./types";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const DeviceStatsChart: React.FC<Props> = ({ metrics }) => {
+  const { t } = useTranslation();
   const chartConfig = {
     Desktop: { label: "Desktop", color: "#29B6F6"  },
     Mobile: { label: "Mobile", color:  "#FF7043" },
     Tablet: { label: "Tablet", color: "#66BB6A" },
   } satisfies ChartConfig ;
 
-  // Format the data properly
   const formattedMetrics = metrics.map((metric) => ({
-    timestamp: new Date(metric.timestamp).toLocaleTimeString(), // Format timestamp
-    Desktop: metric.deviceStats.desktop, // Desktop visitors count
-    Mobile: metric.deviceStats.mobile, // Mobile visitors count
-    Tablet: metric.deviceStats.tablet, // Tablet visitors count
+    timestamp: new Date(metric.timestamp).toLocaleTimeString(),
+    Desktop: metric.deviceStats.desktop,
+    Mobile: metric.deviceStats.mobile,
+    Tablet: metric.deviceStats.tablet,
   }));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{words.devdistribution}</CardTitle>
-        <CardDescription>{words.devdismes}</CardDescription>
+        <CardTitle>{t('devdistribution')}</CardTitle>
+        <CardDescription>{t('devdismes')}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

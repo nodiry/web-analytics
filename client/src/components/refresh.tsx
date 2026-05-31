@@ -1,58 +1,39 @@
-import { Button } from "./ui/button";
-import { RotateCw } from "lucide-react";
-import { toast } from "sonner";
-import { siteConfig } from "@/siteConfig";
-import { useState } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { words } from "@/textConfig";
+import { useState } from 'react';
+import { RotateCw, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useTranslation } from '@/i18n';
+import { metricsApi } from '@/api/metrics';
 
-interface RefreshMetricsProps {
-  unique_key: string;
-}
+interface Props { unique_key: string }
 
-const RefreshMetrics: React.FC<RefreshMetricsProps> = ({ unique_key }) => {
+export default function RefreshMetrics({ unique_key }: Props) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [user] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  })();
+
   const handleRefresh = async () => {
+    if (!user?._id) return;
     setLoading(true);
     try {
-      // Delete old stored metrics from localStorage
-      localStorage.removeItem(`metrics_${unique_key}_day`);
-      localStorage.removeItem(`metrics_${unique_key}_week`);
-      localStorage.removeItem(`metrics_${unique_key}_month`);
-      localStorage.removeItem(`metrics_${unique_key}_all`);
-
-      // Fetch new monthly data
-      const res = await fetch(`${siteConfig.links.metrics}${user._id}/${unique_key}/3`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to fetch metrics");
-
-      // Extract different time ranges
-      const monthlyData = result.metrics; // Full month data
-      const dailyData = monthlyData.slice(-24); // Last 24 hours
-      const weeklyData = monthlyData.slice(-168); // Last 7 days (7 * 24 hours)
-
-      // Save new data into localStorage
-      localStorage.setItem(`metrics_${unique_key}_day`, JSON.stringify(dailyData));
-      localStorage.setItem(`metrics_${unique_key}_week`, JSON.stringify(weeklyData));
-      localStorage.setItem(`metrics_${unique_key}_month`, JSON.stringify(monthlyData));
-
-      // Success message
-      toast.success("Metrics refreshed successfully!");
-      window.location.reload(); // Reload the page
-    } catch (error: any) {
-      toast.error(error.message || "Something went wrong");
+      ['day', 'week', 'month', 'all'].forEach((p) =>
+        localStorage.removeItem(`metrics_${unique_key}_${p}`),
+      );
+      const { metrics } = await metricsApi.fetch(user._id, unique_key, 3);
+      const now = Date.now();
+      const day  = metrics.filter((m) => new Date(m.timestamp).getTime() >= now - 864e5);
+      const week = metrics.filter((m) => new Date(m.timestamp).getTime() >= now - 6048e5);
+      localStorage.setItem(`metrics_${unique_key}_month`, JSON.stringify(metrics));
+      localStorage.setItem(`metrics_${unique_key}_week`,  JSON.stringify(week));
+      localStorage.setItem(`metrics_${unique_key}_day`,   JSON.stringify(day));
+      toast.success('Metrics refreshed');
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message || 'Refresh failed');
     } finally {
       setLoading(false);
     }
@@ -60,17 +41,16 @@ const RefreshMetrics: React.FC<RefreshMetricsProps> = ({ unique_key }) => {
 
   return (
     <TooltipProvider>
-        <Tooltip>
-            <TooltipTrigger> <Button variant="outline" onClick={handleRefresh} disabled={loading}>
-                {loading ? <div className="w-5 h-5 border-4 border-t-transparent border-gray-500 rounded-full animate-spin"></div> : <RotateCw />}
-                </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-                <p>{words.refreshmetric}</p>
-            </TooltipContent>
-        </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={loading}>
+            {loading
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <RotateCw className="h-4 w-4" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('refreshmetric')}</TooltipContent>
+      </Tooltip>
     </TooltipProvider>
   );
-};
-
-export default RefreshMetrics;
+}

@@ -1,109 +1,112 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Eye, EyeOff, Edit } from "lucide-react";
-import { siteConfig } from "@/siteConfig";
-import { toast } from "sonner";
-import { words } from "@/textConfig";
+import { useState } from 'react';
+import { Eye, EyeOff, Edit, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslation } from '@/i18n';
+import { profileApi } from '@/api/profile';
 
 interface User {
-    username:string,
-    firstname: string;
-    lastname: string;
-    email: string;
-    password: string;
+  username: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
 }
 
-interface EditProfileProps {
-    user: User;
-}
+interface Props { user: User }
 
-const EditProfile: React.FC<EditProfileProps> = ({ user }) => {
-  const [formData, setFormData] = useState({
-    username:user.username || "",
-    firstname: user.firstname || "",
-    lastname: user.lastname || "",
-    email: user.email || "",
-    password: "", // Server sends an empty string for safety
-  });
-  const [showPassword, setShowPassword] = useState(false);
+export default function EditProfile({ user }: Props) {
+  const { t } = useTranslation();
+  const [form, setForm] = useState({ ...user, password: '' });
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-        const response = await fetch(siteConfig.links.profile, {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            return toast.error("Profile update failed!");
-        }
-        toast.success("Profile updated successfully");
-
-        localStorage.setItem("user", JSON.stringify(data.user));
-        window.location.reload();
-    } catch (error) {
-        console.error(error);
-        toast.error("Something went wrong!");
+      const { user: updated } = await profileApi.update(form);
+      localStorage.setItem('user', JSON.stringify(updated));
+      toast.success('Profile updated');
+      window.location.reload();
+    } catch {
+      toast.error('Update failed');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog>
       <Tooltip>
         <TooltipTrigger asChild>
-          <DialogTrigger>
-            <Button variant="outline">
-              <Edit className="w-5 h-5 mr-2" /> {words.editprofile}
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4 mr-1.5" /> {t('editprofile')}
             </Button>
           </DialogTrigger>
         </TooltipTrigger>
-        <TooltipContent>{words.editprofilemes}</TooltipContent>
+        <TooltipContent>{t('editprofilemes')}</TooltipContent>
       </Tooltip>
 
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{words.editprofile}</DialogTitle>
+          <DialogTitle>{t('editprofile')}</DialogTitle>
+          <p className="text-sm text-muted-foreground">{t('editprofilemes')}</p>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input name="firstname" value={formData.firstname} onChange={handleChange} placeholder={words.firstname} required />
-          <Input name="lastname" value={formData.lastname} onChange={handleChange} placeholder={words.lastname} required />
-          <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder={words.email} required />
 
-          <div className="relative">
-            <Input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder={words.password}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-0"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+        <form onSubmit={handleSubmit} className="space-y-3 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-fn">{t('firstname')}</Label>
+              <Input id="ep-fn" name="firstname" value={form.firstname} onChange={handleChange} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-ln">{t('lastname')}</Label>
+              <Input id="ep-ln" name="lastname" value={form.lastname} onChange={handleChange} required />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ep-email">{t('email')}</Label>
+            <Input id="ep-email" name="email" type="email" value={form.email} onChange={handleChange} required />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ep-pass">{t('password')}</Label>
+            <div className="relative">
+              <Input
+                id="ep-pass"
+                name="password"
+                type={showPass ? 'text' : 'password'}
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Leave blank to keep current"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('delconfirm')}
             </Button>
           </div>
-
-          <Button type="submit" className="w-full">{words.delconfirm}</Button>
         </form>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default EditProfile;
+}

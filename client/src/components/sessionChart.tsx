@@ -2,20 +2,21 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { MetricData } from "./types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "./ui/chart";
-import { words } from "@/textConfig";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   metrics: MetricData[];
 }
 
 const SessionDurationChart = ({ metrics }: Props) => {
+  const { t } = useTranslation();
   const chartConfig = { avgSessionDuration: { label: "Average Session duration (s)", color: "#8884d8" }}
 
   return (
     <Card>
     <CardHeader>
-      <CardTitle>{words.avgsession}</CardTitle>
-      <CardDescription>{words.avgsessionmes}</CardDescription>
+      <CardTitle>{t('avgsession')}</CardTitle>
+      <CardDescription>{t('avgsessionmes')}</CardDescription>
     </CardHeader>
     <CardContent>
       <ChartContainer config={chartConfig}>
