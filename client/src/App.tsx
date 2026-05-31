@@ -1,18 +1,26 @@
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { motion, useAnimation } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { Github, BarChart3, Zap, Shield, Globe } from 'lucide-react';
-import LangOption from './components/LangOption';
-import FAQ from './faq';
-import HowItWorks from './components/HowItWorks';
-import { ModeToggle } from './components/mode-toggle';
-import { useTranslation } from './i18n';
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { motion, useAnimation } from "framer-motion";
+import { useEffect, useState } from "react";
+import { Github, BarChart3, Zap, Shield, Globe } from "lucide-react";
+import LangOption from "./components/LangOption";
+import FAQ from "./faq";
+import HowItWorks from "./components/HowItWorks";
+import { ModeToggle } from "./components/mode-toggle";
+import { useTranslation } from "./i18n";
 
 const techLogos = [
-  '/react.svg', '/vite.png', '/bun.webp', '/jwt.png',
-  '/tailwind.svg', '/shadcn.webp', '/framer.png',
-  '/typescript.svg', '/mongo.webp', '/express.svg', '/resend.webp',
+  "/react.svg",
+  "/vite.png",
+  "/bun.webp",
+  "/jwt.png",
+  "/tailwind.svg",
+  "/shadcn.webp",
+  "/framer.png",
+  "/typescript.svg",
+  "/mongo.webp",
+  "/express.svg",
+  "/resend.webp",
 ];
 
 const TechMarquee = ({ logos }: { logos: string[] }) => (
@@ -43,15 +51,31 @@ export default function HeroPage() {
       else controls.start({ y: 0, opacity: 1 });
       setLastScrollY(window.scrollY);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY, controls]);
 
   const features = [
-    { icon: <Zap className="h-5 w-5" />,       title: t('feat1_title'), desc: t('feat1_desc') },
-    { icon: <BarChart3 className="h-5 w-5" />,  title: t('feat2_title'), desc: t('feat2_desc') },
-    { icon: <Shield className="h-5 w-5" />,     title: t('feat3_title'), desc: t('feat3_desc') },
-    { icon: <Globe className="h-5 w-5" />,      title: t('feat4_title'), desc: t('feat4_desc') },
+    {
+      icon: <Zap className="h-5 w-5" />,
+      title: t("feat1_title"),
+      desc: t("feat1_desc"),
+    },
+    {
+      icon: <BarChart3 className="h-5 w-5" />,
+      title: t("feat2_title"),
+      desc: t("feat2_desc"),
+    },
+    {
+      icon: <Shield className="h-5 w-5" />,
+      title: t("feat3_title"),
+      desc: t("feat3_desc"),
+    },
+    {
+      icon: <Globe className="h-5 w-5" />,
+      title: t("feat4_title"),
+      desc: t("feat4_desc"),
+    },
   ];
 
   return (
@@ -65,17 +89,21 @@ export default function HeroPage() {
       >
         <div className="flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-primary" />
-          <span className="font-bold text-lg tracking-tight">Glasscube Analytics</span>
+          <span className="font-bold text-lg tracking-tight">
+            Glasscube Analytics
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <HowItWorks />
           <LangOption />
           <ModeToggle />
           <Link to="/auth/signin">
-            <Button variant="ghost" size="sm">{t('signin')}</Button>
+            <Button variant="ghost" size="sm">
+              {t("signin")}
+            </Button>
           </Link>
           <Link to="/auth/signup">
-            <Button size="sm">{t('cta_start')}</Button>
+            <Button size="sm">{t("cta_start")}</Button>
           </Link>
         </div>
       </motion.nav>
@@ -90,7 +118,7 @@ export default function HeroPage() {
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm mb-6"
         >
-          <Zap className="h-3.5 w-3.5" /> {t('hero_badge')}
+          <Zap className="h-3.5 w-3.5" /> {t("hero_badge")}
         </motion.div>
 
         <motion.h1
@@ -99,9 +127,9 @@ export default function HeroPage() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.05]"
         >
-          {t('hero_title1')}{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-cyan-400">
-            {t('hero_title2')}
+          {t("hero_title1")}{" "}
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-cyan-400">
+            {t("hero_title2")}
           </span>
         </motion.h1>
 
@@ -111,7 +139,7 @@ export default function HeroPage() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl"
         >
-          {t('hero_subtitle')}
+          {t("hero_subtitle")}
         </motion.p>
 
         <motion.div
@@ -121,7 +149,7 @@ export default function HeroPage() {
           className="mt-8 flex flex-wrap gap-3 justify-center"
         >
           <Button size="lg" asChild>
-            <Link to="/auth/signup">{t('cta_start')}</Link>
+            <Link to="/auth/signup">{t("cta_start")}</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <a
@@ -130,7 +158,7 @@ export default function HeroPage() {
               rel="noopener noreferrer"
               className="flex items-center gap-2"
             >
-              <Github className="h-4 w-4" /> {t('cta_source')}
+              <Github className="h-4 w-4" /> {t("cta_source")}
             </a>
           </Button>
         </motion.div>
@@ -139,10 +167,10 @@ export default function HeroPage() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8, type: 'spring' }}
+          transition={{ delay: 0.6, duration: 0.8, type: "spring" }}
           className="relative mt-16 w-full max-w-3xl"
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
           <div className="rounded-xl border border-border/50 overflow-hidden shadow-2xl shadow-primary/10">
             <div className="flex items-center gap-1.5 px-4 py-3 bg-muted/50 border-b border-border/50">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
@@ -152,7 +180,11 @@ export default function HeroPage() {
                 analytics.glasscube.io/dashboard
               </div>
             </div>
-            <img src="/dashboard.webp" alt="Dashboard preview" className="w-full" />
+            <img
+              src="/dashboard.webp"
+              alt="Dashboard preview"
+              className="w-full"
+            />
           </div>
         </motion.div>
       </section>
@@ -165,7 +197,7 @@ export default function HeroPage() {
           viewport={{ once: true }}
           className="text-3xl md:text-4xl font-bold text-center mb-12"
         >
-          {t('features_section')}
+          {t("features_section")}
         </motion.h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {features.map((f, i) => (
@@ -192,7 +224,7 @@ export default function HeroPage() {
       {/* Tech stack marquee */}
       <section className="w-full py-8 border-y border-border/40">
         <p className="text-center text-xs text-muted-foreground mb-4 font-medium tracking-widest uppercase">
-          {t('powered_by')}
+          {t("powered_by")}
         </p>
         <TechMarquee logos={techLogos} />
       </section>
@@ -210,10 +242,10 @@ export default function HeroPage() {
           viewport={{ once: true }}
           className="rounded-2xl border border-primary/30 bg-primary/5 p-10"
         >
-          <h2 className="text-3xl font-bold mb-3">{t('cta_ready_title')}</h2>
-          <p className="text-muted-foreground mb-6">{t('cta_ready_sub')}</p>
+          <h2 className="text-3xl font-bold mb-3">{t("cta_ready_title")}</h2>
+          <p className="text-muted-foreground mb-6">{t("cta_ready_sub")}</p>
           <Button size="lg" asChild>
-            <Link to="/auth/signup">{t('cta_free')}</Link>
+            <Link to="/auth/signup">{t("cta_free")}</Link>
           </Button>
         </motion.div>
       </section>
